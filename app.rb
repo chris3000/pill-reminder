@@ -1,19 +1,19 @@
 require 'sinatra'
 require 'twilio-ruby'
 require 'redis'
-require 'yaml'
-#require_relative 'sms.rb'
-
 
 #set up sinatra
 configure do
+  uri = nil
+  uri = URI.parse(ENV["REDISTOGO_URL"]) if ENV["RACK_ENV"] == "production"
+  uri = URI.parse("redis://127.0.0.1:6379") if ENV["RACK_ENV"] == "development" || uri.nil?
+  REDIS = Redis.new(:host => uri.host, :port => uri.port, :password => uri.password)
   set :send_sms_password, ENV["PILL_REMINDER_PASSWORD"]
-  conf=YAML.load_file('twilio_conf.yml')
-  set :twilio_account_sid, ENV["TWILIO_SID"] || conf['account_sid']
-  set :twilio_auth_token, ENV["TWILIO_AUTH_TOKEN"] || conf['auth_token']
-  set :twilio_from_number, ENV["TWILIO_NUMBER"] || conf['from_number']
+  set :twilio_account_sid, ENV["TWILIO_SID"]
+  set :twilio_auth_token, ENV["TWILIO_AUTH_TOKEN"]
+  set :twilio_from_number, ENV["TWILIO_NUMBER"]
   set :reminder_receive_number, ENV["PILL_REMINDER_RECEIVE"]
-  set :redis, Redis.new(:host => "127.0.0.1", :port => 6379, :db => 0)
+  #set :redis, Redis.new(:host => "127.0.0.1", :port => 6379, :db => 0)
 end
 
 helpers do
@@ -29,7 +29,7 @@ helpers do
   end
 
   def redis
-    settings.redis
+    REDIS
   end
 
   def get_reply
@@ -49,6 +49,25 @@ get "/" do
   ""
 end
 
+get "/status" do
+  status = "OK"
+  errors = ""
+  begin
+    errors << "missing SMS Password " if settings.send_sms_password.nil?
+    errors << "missing Twilio SID " if settings.twilio_account_sid.nil?
+    errors << "missing Twilio Auth Token " if settings.twilio_auth_token.nil?
+    errors << "missing twilio FROM number " if settings.twilio_from_number.nil?
+    errors << "missing twilio receive number " if settings.reminder_receive_number.nil?
+    errors << "Redis is Null " if redis.nil?
+    redis.set(:status,"test")
+    redis.get(:status)
+    redis.del(:status)
+  rescue
+    errors << "Something went wrong, probably a misconfigured Redis "
+  end
+  status = "ERROR" unless errors.empty?
+  "#{status} #{errors}"
+end
 #receive SMS and see if it's a positive reply
 post "/receive_sms/?" do
     puts "post receive_sms"
