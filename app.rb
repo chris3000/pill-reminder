@@ -76,7 +76,7 @@ post "/receive_sms/?" do
   done = (body.include?("yes") || body.include?("done") || body.include?("took") || body.include?("ok"))
   if done  # return message
     twiml = Twilio::TwiML::Response.new do |r|
-      r.Sms get_reply
+      r.Message get_reply
     end
     twiml.text
     #todo set msg in Redis
