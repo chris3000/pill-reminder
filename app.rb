@@ -101,7 +101,7 @@ post "/send_sms/?" do
     puts "sending sms"
     client = Twilio::REST::Client.new(settings.twilio_account_sid, settings.twilio_auth_token)
     account = client.account
-    @sms_reply = account.sms.messages.create({:from => settings.twilio_from_number, :to => params["phone_number"], :body => params["message"]})
+    @sms_reply = account.sms.messages.create({:from => settings.twilio_from_number, :to => settings.reminder_receive_number, :body => get_msg})
     puts "got back this: #{@sms_reply.inspect}"
   end
   @message || "SMS sent"
