@@ -70,18 +70,20 @@ get "/status" do
 end
 #receive SMS and see if it's a positive reply
 post "/receive_sms/?" do
-    puts "post receive_sms"
-    puts params.inspect
+    #puts "post receive_sms"
+    #puts params.inspect
   body = params["Body"].downcase
   done = (body.include?("yes") || body.include?("done") || body.include?("took") || body.include?("ok"))
+  res = ""
   if done  # return message
     twiml = Twilio::TwiML::Response.new do |r|
-      r.Message get_reply
+      r.Sms get_reply
     end
-    twiml.text
+    res = twiml.text
     #todo set msg in Redis
     redis.set(:took_pills, "true")
   end
+  return res
 end
 
 post "/send_sms/?" do
