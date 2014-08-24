@@ -73,7 +73,7 @@ post "/receive_sms/?" do
     #puts "post receive_sms"
     #puts params.inspect
   body = params["Body"].downcase
-  done = (body.include?("yes") || body.include?("done") || body.include?("took") || body.include?("ok"))
+  done = (body.start_with?("y") || body.include?("done") || body.include?("took") || body.include?("ok"))
   res = ""
   if done  # return message
     twiml = Twilio::TwiML::Response.new do |r|
